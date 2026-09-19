@@ -1,7 +1,8 @@
-# Build output
-build/
-chess
-main
+# Build output (anchored to the repo root so src/engine/ is not caught)
+/build/
+/chess
+/engine
+/main
 *.o
 *.d
 
@@ -9,4 +10,4 @@ main
 .DS_Store
 
 # Course admin (contains student userids)
-admin/
+/admin/

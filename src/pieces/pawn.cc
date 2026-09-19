@@ -2,7 +2,9 @@
 #include "board.h"
 
 bool Pawn::IsEnPassant(const std::string& to) const {
-	if (loc[1] != '4' || loc[1] != '5') return false;
+	// A square is never both '4' and '5', so the original || made this test
+	// always true and en passant could never fire.
+	if (loc[1] != '4' && loc[1] != '5') return false;
 	if (loc[0] == to[0] || abs(loc[1] - to[1]) > 1) return false;
 	std::string en_passant_loc = std::string() + to[0] + loc[1];
 	return (*board)[en_passant_loc] != nullptr && (*board)[en_passant_loc]->IsPawn() &&

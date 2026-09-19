@@ -146,6 +146,9 @@ class Board : public Subject {
 			return LEFT_COL <= loc[0] && loc[0] <= RIGHT_COL && BOT_ROW <= loc[1] && loc[1] <= TOP_ROW;
 		}
 
+		// Does the given player have any legal move at all?
+		bool HasLegalMove(char);
+
 		bool Check(); // is my last move a check move?
 		bool Checked(); // if the current player is getting checked
 		bool CheckMate(); // is my last move a checkmate?

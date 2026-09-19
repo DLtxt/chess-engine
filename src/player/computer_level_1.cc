@@ -1,13 +1,15 @@
 #include "computer_player.h"
 #include "parser.h"
 #include "board.h"
-#include <stdlib.h>
-#include <time.h>
+#include <random>
 #include <sstream>
 
+// Seeding on every call meant that two calls in the same second returned the
+// same value, which correlated the piece choice with the move choice.
 int rand_n(int n) {
-	srand(time(NULL));
-	return rand() % n;
+	static std::mt19937 rng{std::random_device{}()};
+	if (n <= 0) return 0;
+	return std::uniform_int_distribution<int>(0, n - 1)(rng);
 }
 
 void ComputerLevel1::MakeMove(ComputerPlayer* player) {

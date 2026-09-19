@@ -332,62 +332,27 @@ bool Board::Checked() {
 	return players[opponent]->CanSee(king_loc[player]);
 }
 
-bool Board::CheckMate() {
-	
-	// can't be a checkmate if not a check
-	if (!Check()) return false; 
-	
-	// not a checkmate if piece can be captured by king
-	auto last_moved = move_path.top();
-	// if (CanBeCaptured(last_moved, player)) return false;
-	if (players[opponent]->CanCapture(last_moved)) return false;
-	// if (pieces[king_loc[player]]->CanCapture(last_moved)) return false;
-	
-	// not a checkmate if king can escape
-	const auto& oppo_king = pieces[king_loc[opponent]];
-	for (const auto& move : *oppo_king) {
-		if (oppo_king->CanMove(move)) { // king can escape here?
-			
-			return false; 
+bool Board::HasLegalMove(char who) {
+	// Piece::CanMove already rejects moves that would leave the mover's own
+	// king under attack, so any move it accepts is fully legal.
+	for (const auto& piece : GetHand(who)) {
+		for (const auto& to : *piece) {
+			if (piece->CanMove(to)) return true;
+		}
+	}
+	return false;
+}
 
-			ApplyMove(players[opponent]->ParseCommand(king_loc[opponent], move));
-			
-			bool escaped = !players[player]->CanCapture(move);
-			
-			Undo();
-			
-			if (escaped) return false;
-		}
-	}
-	// not a checkmate if friendly pieces can block the attack
-	char name = pieces[last_moved]->Name();
-	if (toupper(name) == ROOK || toupper(name) == QUEEN || toupper(name) == BISHOP) {
-		int cdir = king_loc[opponent][0] - last_moved[0];
-		if (cdir != 0) cdir /= abs(cdir);
-		int rdir = king_loc[opponent][1] - last_moved[1];
-		if (rdir != 0) rdir /= abs(rdir);
-		std::string block = last_moved;
-		block[0] += cdir;
-		block[1] += rdir;
-		while (block != king_loc[opponent]) {
-			if (Distance(block, king_loc[opponent]) > 1 && players[opponent]->CanSee(block) > 0) return false;
-			if (Distance(block, king_loc[opponent]) == 1 && players[opponent]->CanSee(block) > 1) return false;
-			block[0] += cdir;
-			block[1] += rdir;
-		}
-	}
-	return true;
+// Checkmate and stalemate are the same question asked twice: the side to move
+// has no legal reply, and the only difference is whether it is currently in
+// check. Deciding both from one legal-move scan removes the special cases the
+// previous hand-rolled versions tried to enumerate.
+bool Board::CheckMate() {
+	return Check() && !HasLegalMove(opponent);
 }
 
 bool Board::StaleMate() {
-	for (const auto& [loc, piece] : pieces) {
-		if (piece != BLANK && piece->Player() == opponent && !pieces[loc]->IsKing()) return false;
-	}
-	const auto& opponent_king = pieces[king_loc[opponent]];
-	for (const auto move : *opponent_king) {
-		if (move != king_loc[opponent] && !players[player]->CanSee(move)) return false;
-	}
-	return true;
+	return !Check() && !HasLegalMove(opponent);
 }
 
 int Board::BoardScore() {

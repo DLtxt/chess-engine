@@ -35,6 +35,12 @@ void ComputerPlayer::TakeAction() {
 }
 
 void ComputerPlayer::MakeMove() {
+	if (level >= 5) {
+		try {
+			level_5.MakeMove(this);
+			return;
+		} catch (...) {}
+	}
 	if (level >= 4) {
 		try {
 			level_4.MakeMove(this);

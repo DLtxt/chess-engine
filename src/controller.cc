@@ -10,6 +10,7 @@
 #define COMPUTER_LEVEL2 "computer2"
 #define COMPUTER_LEVEL3 "computer3"
 #define COMPUTER_LEVEL4 "computer4"
+#define COMPUTER_LEVEL5 "computer5"
 
 Controller::~Controller() { 
 	std::cout << "Final Score:" << std::endl;
@@ -47,6 +48,9 @@ void Controller::StartGame() {
 			} else
 			if (player1.compare(COMPUTER_LEVEL4) == 0) {
 				board->AddComputerPlayer(4);
+			} else
+			if (player1.compare(COMPUTER_LEVEL5) == 0) {
+				board->AddComputerPlayer(5);
 			}
 			if (player2.compare(HUMAN_PLAYER) == 0) {
 				board->AddHumanPlayer();
@@ -62,6 +66,9 @@ void Controller::StartGame() {
 			} else
 			if (player2.compare(COMPUTER_LEVEL4) == 0) {
 				board->AddComputerPlayer(4);
+			} else
+			if (player2.compare(COMPUTER_LEVEL5) == 0) {
+				board->AddComputerPlayer(5);
 			}
 			while (true) {
 				try {
