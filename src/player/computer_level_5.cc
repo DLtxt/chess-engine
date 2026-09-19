@@ -112,7 +112,7 @@ void ComputerLevel5::MakeMove(ComputerPlayer* player) {
 
 		const eng::SearchResult result =
 			eng::search_parallel(pos, limits, threads_, false);
-		chosen = chosen;
+		chosen = result.best;
 	}
 
 	if (chosen == eng::kMoveNone) throw _no_moves_found_{};

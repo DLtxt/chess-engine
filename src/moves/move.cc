@@ -2,7 +2,7 @@
 #include "board.h"
 #include <assert.h>
 
-Move::Move(const std::string& from, const std::string& to) : from{from}, to{to}, capture_count{0}, captured{nullptr} {}
+Move::Move(const std::string& from, const std::string& to) : from{from}, to{to}, captured{nullptr} {}
 
 void Move::MakeMoveOn(Board* board) {
 	my_board = board;

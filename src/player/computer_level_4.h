@@ -11,7 +11,7 @@ class ComputerLevel4 {
 
 	Board *board;
 	std::string best_from, best_move;
-	char player, opponent;
+	char player;
 
 	size_t START_LEVEL;
 
