@@ -249,16 +249,3 @@ for (const auto& to : *piece) {
 ```
 
 Search relies on the `AbstractMove` command objects: `Board::ApplyMove` pushes a move onto an undo stack and `Board::Undo` pops and reverses it, which is what lets the alpha-beta search explore and unwind lines on the live board.
-
----
-
-## Known limitations
-
-These are real behaviours of the current code, worth knowing before you read it or build on it:
-
-- **The engine waits for input on its turn.** You type a bare `move` to advance a computer player. It is not an autoplay loop.
-- **`Board::CheckMate` is approximate.** The king-escape loop returns `false` unconditionally at the top, with the real escape test unreachable below it — so any king with a pseudo-legal move is treated as not mated.
-- **Level 1's randomness is weak.** `rand_n` calls `srand(time(NULL))` on every invocation. Because the seed has one-second granularity, repeated calls within the same second return the same value, correlating the piece choice with the move choice.
-- **Levels 2 and 3 mutate the board while iterating a piece's own move iterator.** Level 4 avoids this by snapshotting legal targets into a vector before applying anything; the lower levels do not.
-- **Level 2 can leave a trial move applied.** Its `Undo()` sits inside the `try` block, so an exception thrown by `Check()` or `CheckMate()` skips the undo.
-- **`DecisionTree` is dead code.** It is not in the Makefile's `FILE_LIST` and nothing references it; the search uses the board's own move stack instead.
