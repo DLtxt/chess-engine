@@ -25,7 +25,13 @@ The `engine` binary has no X11 dependency at all — build and run it anywhere. 
 Cannot open display
 ```
 
-The graphics window is created unconditionally, so `./chess` needs a display. `./engine` does not.
+If no display is available, `./chess` now says so and continues with the terminal board rather than exiting. You can also skip the window outright:
+
+```bash
+./chess --no-graphics     # or -n
+```
+
+`./engine` never needs a display at all.
 
 **macOS** — install [XQuartz](https://www.xquartz.org/) and launch it before running:
 
@@ -87,7 +93,8 @@ make EXTRA="-cxx-isystem $(xcrun --show-sdk-path)/usr/include/c++/v1"
 ## Running
 
 ```bash
-./chess
+./chess                 # text board + X11 window
+./chess --no-graphics   # text board only
 ```
 
 The program starts by asking which game to play. Type exactly one of:

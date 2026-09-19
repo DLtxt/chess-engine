@@ -117,13 +117,19 @@ const char *silver_piece[] = {
   "SSSS  "
 };
 
-GraphicsUI::GraphicsUI(Board* board) : board{board}, display{nullptr}, window{0}, gc{0}, board_is_drawn{false} {
-  board->Attach(this);
+GraphicsUI::GraphicsUI(Board* board, bool enabled) : board{board}, display{nullptr}, window{0}, gc{0}, board_is_drawn{false}, active{false} {
+  if (!enabled) return;
+
   display = XOpenDisplay(nullptr);
   if (display == nullptr) {
-    std::cerr << "Cannot open display\n";
-    exit(1);
+    // No display is not fatal: the terminal UI alone is a complete game, and
+    // this is what lets the binary run over SSH or in a test script.
+    std::cerr << "No X display available; continuing with the text board only.\n";
+    return;
   }
+
+  active = true;
+  board->Attach(this);
   screen = DefaultScreen(display);
   width = WINDOW_WIDTH;
   height = WINDOW_HEIGHT;
@@ -141,10 +147,11 @@ GraphicsUI::GraphicsUI(Board* board) : board{board}, display{nullptr}, window{0}
 }
 
 GraphicsUI::~GraphicsUI() {
-  XCloseDisplay(display);
+  if (display) XCloseDisplay(display);
 }
 
 void GraphicsUI::Notify() {
+  if (!active) return;
   DrawBoard();
   board_is_drawn = true;
   DrawPieces();

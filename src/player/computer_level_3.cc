@@ -3,6 +3,7 @@
 #include "board.h"
 #include "parser.h"
 #include "moves/abstract_move.h"
+#include <vector>
 
 void ComputerLevel3::MakeMove(ComputerPlayer* player) {
 	int highest_rank = 0;
@@ -14,42 +15,64 @@ void ComputerLevel3::MakeMove(ComputerPlayer* player) {
 
 			auto from = piece->Location();
 
+			// Snapshot before mutating: ApplyMove moves the piece out from under
+			// the iterator that is still walking its move list.
+			std::vector<std::string> candidates;
 			for (const auto& to : *piece) {
+				if (piece->CanMove(to)) candidates.push_back(to);
+			}
+
+			for (const auto& to : candidates) {
 				if (!escape_to.empty()) break;
-				if (!piece->CanMove(to)) continue;
 
-				player->board->ApplyMove(player->ParseCommand(from, to));
-
-				if (!piece->CanGetCaptured(piece->Location())) {
-
-					highest_rank = piece->Priority();
-					escape_from = from;
-					escape_to = to;
+				try {
+					player->board->ApplyMove(player->ParseCommand(from, to));
+				} catch (...) {
+					continue;
 				}
 
-				player->board->Undo();
+				try {
+					if (!piece->CanGetCaptured(piece->Location())) {
+						highest_rank = piece->Priority();
+						escape_from = from;
+						escape_to = to;
+					}
+				} catch (...) {}
+
+				try { player->board->Undo(); } catch (...) {}
 			}
 
 			if (!escape_to.empty()) break;
 
 			for (const auto& savior : player->board->GetHand(player->player)) {
 				if (savior == piece) continue;
+				if (!escape_to.empty()) break;
 
+				const auto savior_from = savior->Location();
+
+				std::vector<std::string> savior_moves;
 				for (const auto& savior_move : *savior) {
+					if (savior->CanMove(savior_move)) savior_moves.push_back(savior_move);
+				}
+
+				for (const auto& savior_move : savior_moves) {
 					if (!escape_to.empty()) break;
-					if (!savior->CanMove(savior_move)) continue;
 
-					auto savior_from = savior->Location();
-					player->board->ApplyMove(player->ParseCommand(savior_from, savior_move));
-
-					if (!piece->CanGetCaptured(piece->Location()) && (!savior->CanGetCaptured(savior->Location()) || savior->Priority() < piece->Priority())) {
-
-						highest_rank = piece->Priority();
-						escape_from = savior_from;
-						escape_to = savior_move;
+					try {
+						player->board->ApplyMove(player->ParseCommand(savior_from, savior_move));
+					} catch (...) {
+						continue;
 					}
 
-					player->board->Undo();
+					try {
+						if (!piece->CanGetCaptured(piece->Location()) && (!savior->CanGetCaptured(savior->Location()) || savior->Priority() < piece->Priority())) {
+							highest_rank = piece->Priority();
+							escape_from = savior_from;
+							escape_to = savior_move;
+						}
+					} catch (...) {}
+
+					try { player->board->Undo(); } catch (...) {}
 				}
 			}
 		}

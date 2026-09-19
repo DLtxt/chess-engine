@@ -9,7 +9,8 @@ class Game {
 	std::string game_mode;
 
 	public:
-		void Start(Board* game_board);
+		// `graphics` false skips the X11 window entirely.
+		void Start(Board* game_board, bool graphics = true);
 };
 
 #endif

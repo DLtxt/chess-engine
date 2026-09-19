@@ -2,6 +2,9 @@
 #include "parser.h"
 #include "board.h"
 #include <random>
+#include <string>
+#include <utility>
+#include <vector>
 #include <sstream>
 
 // Seeding on every call meant that two calls in the same second returned the
@@ -13,38 +16,36 @@ int rand_n(int n) {
 }
 
 void ComputerLevel1::MakeMove(ComputerPlayer* player) {
-	while (true) {
-		auto hand = player->board->GetHand(player->player);
-		auto piece = hand[rand_n(hand.size())];
-		// make a random move
-		int count_moves = 0;
+	// Collect every legal move in one pass, split into those that do not leave
+	// the piece capturable and those that do. The original version re-rolled a
+	// random piece until it found a safe move, which never terminated when no
+	// piece had one.
+	std::vector<std::pair<std::string, std::string>> safe, all;
 
+	for (const auto& piece : player->board->GetHand(player->player)) {
+		const auto from = piece->Location();
+
+		std::vector<std::string> candidates;
 		for (const auto& to : *piece) {
-
-			if (piece->CanMove(to) && !player->board->CanBeCaptured(to, player->player)) {
-				++count_moves;
-			}
+			if (piece->CanMove(to)) candidates.push_back(to);
 		}
 
-		if (count_moves == 0) continue; // no valid moves
-
-		int rand_move = rand_n(count_moves) + 1;
-
-		for (const auto& to: *piece) {
-
-			if (piece->CanMove(to) && !player->board->CanBeCaptured(to, player->player)) {
-				--rand_move;
-			}
-
-			if (rand_move == 0) {
-				
-				try {
-					player->board->MakeMove(player->ParseCommand(piece->Location(), to));
-					return;
-				} catch (...) {
-					throw;
-				}
-			}
+		for (const auto& to : candidates) {
+			all.emplace_back(from, to);
+			if (!player->board->CanBeCaptured(to, player->player))
+				safe.emplace_back(from, to);
 		}
+	}
+
+	// Prefer a safe move, but play a hanging one rather than not moving.
+	const auto& pool = safe.empty() ? all : safe;
+	if (pool.empty()) throw _no_moves_found_{};
+
+	const auto& choice = pool[rand_n(static_cast<int>(pool.size()))];
+
+	try {
+		player->board->MakeMove(player->ParseCommand(choice.first, choice.second));
+	} catch (...) {
+		throw;
 	}
 }

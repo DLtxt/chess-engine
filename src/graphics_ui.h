@@ -25,10 +25,13 @@ class GraphicsUI : public Observer {
 	std::map<std::string, bool> capture_status, move_status;
 	
 	bool board_is_drawn;
+	// False when there is no display, or graphics were switched off. The UI
+	// then attaches to nothing and every entry point is a no-op.
+	bool active;
 	
 	public:
   
-	  GraphicsUI(Board* board);
+	  GraphicsUI(Board* board, bool enabled = true);
     ~GraphicsUI();
     void Notify() override;
 };

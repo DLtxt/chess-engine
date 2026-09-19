@@ -372,14 +372,21 @@ int Board::BoardScore() {
 			}
 		}
 	}
+	// Check is a single vision lookup, and both CheckMate and StaleMate
+	// short-circuit on it. HasLegalMove returns as soon as it finds one legal
+	// move, so the common case costs a single piece's move scan.
+	const bool check = Check();
+	const bool mate = check && !HasLegalMove(opponent);
+	const bool stale = !check && !HasLegalMove(opponent);
+
 	if (player == WHITE) {
-		if (Check()) score += CHECK_SCORE;
-		if (CheckMate()) score = MAX_SCORE;
-		if (StaleMate()) score += STALE_SCORE;
+		if (check) score += CHECK_SCORE;
+		if (mate) score = MAX_SCORE;
+		if (stale) score += STALE_SCORE;
 	} else {
-		if (Check()) score -= CHECK_SCORE;
-		if (CheckMate()) score = -MAX_SCORE;
-		if (StaleMate()) score -= STALE_SCORE;
+		if (check) score -= CHECK_SCORE;
+		if (mate) score = -MAX_SCORE;
+		if (stale) score -= STALE_SCORE;
 	}
 	return score;
 }
