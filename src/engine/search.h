@@ -85,6 +85,14 @@ private:
 	static void init_reductions();
 };
 
+// Lazy SMP: run `threads` independent searchers over the same position, all
+// sharing the one global transposition table. The helpers are not coordinated
+// beyond that shared table -- they simply explore in different orders and
+// deepen each other's entries, which is where the gain comes from. The main
+// thread owns the clock; when it finishes, the helpers are stopped.
+SearchResult search_parallel(const Position& pos, const SearchLimits& limits,
+                             int threads, bool print_info);
+
 } // namespace eng
 
 #endif

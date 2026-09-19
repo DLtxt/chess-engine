@@ -4,7 +4,7 @@ A command-line chess engine written in C++20, with a second game mode for **Shog
 
 The engine renders to two displays at once — an ANSI-coloured board in your terminal and an X11 graphics window — kept in sync through an Observer pattern. It supports full chess rules (castling, en passant, pawn promotion, check/checkmate/stalemate detection), unlimited undo, a free-form board setup mode, and five levels of computer opponent.
 
-Levels 1–4 are the original heuristic players, from random moves up to a depth-3 alpha-beta search over the object graph. **Level 5 is a separate bitboard search engine** living in `src/engine`: iterative deepening, principal variation search with null-move pruning and late move reductions, a transposition table, quiescence search with static exchange evaluation, and a tapered evaluation with piece-square tables, pawn structure and king safety. It also builds as a **standalone UCI engine** that runs headless and plays in any chess GUI.
+Levels 1–4 are the original heuristic players, from random moves up to a depth-3 alpha-beta search over the object graph. **Level 5 is a separate bitboard search engine** living in `src/engine`: iterative deepening, principal variation search with null-move pruning and late move reductions, a transposition table, quiescence search with static exchange evaluation, and a tapered evaluation with piece-square tables, pawn structure and king safety. It also builds as a **standalone UCI engine** that runs headless, plays in any chess GUI, searches in parallel across multiple threads, and opens from a built-in book.
 
 ---
 
@@ -75,6 +75,12 @@ make help      # list every target
 ```
 
 The build is `-O2` by default. Optimisation matters more than usual here: search speed is strength, and an `-O0` build searches several times shallower in the same time.
+
+`EXTRA` passes additional flags to every compile, for toolchains that need them. On a macOS install whose `include/c++/v1` shadows the SDK's copy of libc++, for instance:
+
+```bash
+make EXTRA="-cxx-isystem $(xcrun --show-sdk-path)/usr/include/c++/v1"
+```
 
 ---
 
@@ -222,6 +228,34 @@ A **tapered** evaluation: every term is computed twice, once for the middlegame 
 - **Mobility** per piece, counting only squares not controlled by enemy pawns.
 - Bishop pair, rooks on open and semi-open files, rooks on the seventh.
 
+### Parallel search
+
+Lazy SMP. Several searchers run over the same position, coordinated only by the shared transposition table: each explores in a slightly different order and deepens the entries the others read. The main thread owns the clock and stops the helpers when the move is due.
+
+The gain shows up as depth reached per unit time rather than raw nodes — the helpers make the main thread's search better ordered, so it prunes harder:
+
+| Threads | Depth 13 from a Sicilian position |
+|---|---|
+| 1 | 702 ms |
+| 4 | 264 ms |
+
+Set it with the UCI `Threads` option, up to 64.
+
+### Opening book
+
+A book of the main lines of 28 standard openings — Ruy Lopez, Italian, Scotch, Petrov, Najdorf, Dragon, Sveshnikov, French, Caro-Kann, Scandinavian, Alekhine, Pirc, QGD, QGA, Slav, London, Nimzo-Indian, Queen's Indian, King's Indian, Grünfeld, Benoni, Dutch, English, Réti and others.
+
+It is **compiled into the binary**, so there is no `.bin` file to ship or lose. The lines are stored as move sequences and replayed at startup into a table of position key → move, which means the book covers transpositions between its lines for free, and weights each move by how many lines play it.
+
+Every line is replayed and checked for legality at startup, so a typo in the line table is caught rather than producing an illegal book move. Verify the table yourself:
+
+```bash
+echo book | ./engine
+# All book lines are legal. 195 positions covered by 222 entries.
+```
+
+Turn it off with the UCI `OwnBook` option.
+
 ### Draw detection
 
 Threefold repetition (walking back through the position keys to the last irreversible move), the fifty-move rule, and insufficient material. Checkmate and stalemate come from a single test: the side to move has no legal reply, and the only question is whether it is in check.
@@ -249,6 +283,7 @@ It also accepts several non-standard commands, useful on their own:
 | `./engine perfttest` | Run the move generator against published node counts |
 | `./engine perft <fen> <depth>` | Per-move node breakdown for one position |
 | `./engine bench [depth]` | Fixed workload across six positions — node count and nps |
+| `book` | Validate every opening-book line and report its coverage |
 | `d` | Print the current board and its FEN |
 | `eval` | Static evaluation of the current position |
 
@@ -260,7 +295,19 @@ It also accepts several non-standard commands, useful on their own:
 make test
 ```
 
-The suite covers the six standard positions, which between them exercise castling, en passant, promotion, pins, discovered check and double check.
+The suite covers the six standard positions, which between them exercise castling, en passant, promotion, pins, discovered check and double check. All six pass:
+
+```
+ok    startpos    depth 5  got 4865609   expected 4865609
+ok    kiwipete    depth 4  got 4085603   expected 4085603
+ok    position 3  depth 6  got 11030083  expected 11030083
+ok    position 4  depth 5  got 15833292  expected 15833292
+ok    position 5  depth 4  got 2103487   expected 2103487
+ok    position 6  depth 4  got 3894594   expected 3894594
+
+41812668 nodes in 930 ms  (44959 knps)
+All perft tests passed.
+```
 
 ### Measuring whether a change helped
 

@@ -10,7 +10,10 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace eng {
 
@@ -539,6 +542,59 @@ SearchResult Searcher::search(Position& pos, const SearchLimits& limits, bool pr
 	}
 
 	return result;
+}
+
+SearchResult search_parallel(const Position& pos, const SearchLimits& limits,
+                             int threads, bool print_info) {
+	threads = std::max(1, threads);
+
+	if (threads == 1) {
+		Position copy = pos;
+		Searcher solo;
+		return solo.search(copy, limits, print_info);
+	}
+
+	std::vector<std::unique_ptr<Searcher>> searchers;
+	searchers.reserve(threads);
+	for (int i = 0; i < threads; ++i) searchers.push_back(std::make_unique<Searcher>());
+
+	std::vector<SearchResult> results(threads);
+	std::vector<std::thread> helpers;
+	helpers.reserve(threads - 1);
+
+	for (int i = 1; i < threads; ++i) {
+		helpers.emplace_back([&, i]() {
+			Position copy = pos;
+
+			// Helpers run without a clock of their own and are stopped by the
+			// main thread, so they never decide when the move is due.
+			SearchLimits l = limits;
+			l.movetime = 0;
+			l.time[kWhite] = l.time[kBlack] = 0;
+			l.inc[kWhite] = l.inc[kBlack] = 0;
+			l.nodes = 0;
+			l.infinite = true;
+
+			// Staggering the depth gives the helpers different move orders, so
+			// they fill the shared table with work the main thread has not done.
+			if (l.depth > 0) l.depth = std::min(l.depth + (i % 3), kMaxPly - 2);
+
+			results[i] = searchers[i]->search(copy, l, false);
+		});
+	}
+
+	Position main_copy = pos;
+	results[0] = searchers[0]->search(main_copy, limits, print_info);
+
+	for (auto& s : searchers) s->stop();
+	for (auto& t : helpers) t.join();
+
+	// Report the whole pool's work, not just the main thread's share.
+	uint64_t total = 0;
+	for (const SearchResult& r : results) total += r.nodes;
+	results[0].nodes = total;
+
+	return results[0];
 }
 
 } // namespace eng

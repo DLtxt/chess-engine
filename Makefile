@@ -10,7 +10,11 @@
 CXX       = g++
 OPT       = -O2
 WARN      = -Wall -Wextra -Wno-unused-parameter
-CXXFLAGS  = -std=c++20 $(OPT) $(WARN) -MMD -MP -Isrc
+# Escape hatch for toolchains that need extra flags, e.g. a macOS install whose
+# include/c++/v1 shadows the SDK's:
+#   make EXTRA="-cxx-isystem $(xcrun --show-sdk-path)/usr/include/c++/v1"
+EXTRA     =
+CXXFLAGS  = -std=c++20 $(OPT) $(WARN) -MMD -MP -Isrc $(EXTRA)
 X11FLAGS  = -I/usr/X11/include
 X11LIBS   = -L/usr/X11/lib -lX11
 
@@ -24,6 +28,7 @@ ENGINE_FILES = \
 	engine/position.cc \
 	engine/movegen.cc \
 	engine/eval.cc \
+	engine/book.cc \
 	engine/tt.cc \
 	engine/search.cc \
 	engine/perft.cc \
@@ -89,8 +94,11 @@ $(GAME_EXEC): $(GAME_OBJS) $(ENGINE_OBJS)
 $(ENGINE_EXEC): $(ENGINE_OBJS) $(ENGINE_MAIN_OBJ)
 	$(CXX) $^ -o $@ -pthread
 
-# Only the UI translation unit needs the X11 include path.
-$(BUILD_DIR)/graphics_ui.o: $(SRC_DIR)/graphics_ui.cc
+# Translation units that pull in graphics_ui.h need the X11 include path.
+# Nothing in ENGINE_FILES does, which is what keeps `make engine` headless.
+X11_OBJS = $(BUILD_DIR)/graphics_ui.o $(BUILD_DIR)/game.o
+
+$(X11_OBJS): $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(X11FLAGS) -c -o $@ $<
 

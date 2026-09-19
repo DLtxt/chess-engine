@@ -17,10 +17,12 @@ public:
 
 	void SetMoveTime(int ms) { movetime_ms_ = ms; }
 	void SetDepth(int depth) { depth_ = depth; }
+	void SetThreads(int threads) { threads_ = threads; }
 
 private:
 	int movetime_ms_;
-	int depth_ = 0;  // when non-zero, search to a fixed depth instead
+	int depth_ = 0;     // when non-zero, search to a fixed depth instead
+	int threads_ = 1;   // Lazy SMP search threads
 };
 
 // Renders the legacy board as a FEN string. Exposed for testing the bridge.

@@ -5,6 +5,7 @@
 #include "moves/abstract_move.h"
 #include "parser.h"
 
+#include "engine/book.h"
 #include "engine/engine.h"
 #include "engine/movegen.h"
 #include "engine/position.h"
@@ -101,22 +102,28 @@ void ComputerLevel5::MakeMove(ComputerPlayer* player) {
 	if (!pos.set_fen(BoardToFen(player->board, player->player)))
 		throw _no_moves_found_{};
 
-	eng::SearchLimits limits;
-	if (depth_ > 0) limits.depth = depth_;
-	else limits.movetime = movetime_ms_;
+	// Play straight from the opening book while it still knows the position.
+	eng::Move chosen = eng::probe_book(pos);
 
-	eng::Searcher searcher;
-	const eng::SearchResult result = searcher.search(pos, limits, false);
+	if (chosen == eng::kMoveNone) {
+		eng::SearchLimits limits;
+		if (depth_ > 0) limits.depth = depth_;
+		else limits.movetime = movetime_ms_;
 
-	if (result.best == eng::kMoveNone) throw _no_moves_found_{};
+		const eng::SearchResult result =
+			eng::search_parallel(pos, limits, threads_, false);
+		chosen = chosen;
+	}
 
-	const std::string from = eng::square_to_string(eng::from_sq(result.best));
-	const std::string to = eng::square_to_string(eng::to_sq(result.best));
+	if (chosen == eng::kMoveNone) throw _no_moves_found_{};
+
+	const std::string from = eng::square_to_string(eng::from_sq(chosen));
+	const std::string to = eng::square_to_string(eng::to_sq(chosen));
 
 	// ParseCommand treats PAWN as "no promotion requested".
 	char promotion = PAWN;
-	if (eng::move_type(result.best) == eng::kPromotion) {
-		switch (eng::promotion_type(result.best)) {
+	if (eng::move_type(chosen) == eng::kPromotion) {
+		switch (eng::promotion_type(chosen)) {
 			case eng::kQueen:  promotion = QUEEN;  break;
 			case eng::kRook:   promotion = ROOK;   break;
 			case eng::kBishop: promotion = BISHOP; break;
