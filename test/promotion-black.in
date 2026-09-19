@@ -1,0 +1,9 @@
+setup
++ P d7
++ K e1
++ k e8
+= black
+done
+game human human
+move e8 d7
+undo

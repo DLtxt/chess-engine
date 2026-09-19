@@ -1,0 +1,11 @@
+shogi
+setup
++ k e1
++ K e9
++ B d5
++ n e3
+done
+game human human
+move e3 d5
+move e9 f9
+drop a4 B

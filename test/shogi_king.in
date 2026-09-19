@@ -1,0 +1,8 @@
+shogi
+setup
++ k e1
++ K e9
+= white
+done
+game human human
+move e9 d9

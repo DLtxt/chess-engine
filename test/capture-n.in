@@ -1,0 +1,9 @@
+setup
++ K e1
++ k e8
++ n f1
++ B e3
+= black
+done
+game computer3 computer3
+move

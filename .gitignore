@@ -1,0 +1,12 @@
+# Build output
+build/
+chess
+main
+*.o
+*.d
+
+# macOS
+.DS_Store
+
+# Course admin (contains student userids)
+admin/

@@ -1,0 +1,8 @@
+setup
++ K e1
++ k e8
++ n d3
+= black
+done
+game human human
+move d3 e1

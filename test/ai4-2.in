@@ -1,0 +1,9 @@
+chess
+setup
++ K e1
++ k e8
++ Q h4
++ q h5
+done
+game computer4 computer4
+move

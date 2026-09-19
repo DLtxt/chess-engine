@@ -1,0 +1,11 @@
+chess
+setup
++ K e1
++ Q d1
++ k e8
++ q e3
++ p f3
+= black
+done
+game human human
+move e3 f2

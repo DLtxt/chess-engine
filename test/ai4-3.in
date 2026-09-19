@@ -1,0 +1,10 @@
+chess
+setup
++ K h3
++ Q c1
++ R c6
++ k e8
++ q e5
+= black
+done
+game computer4 computer4

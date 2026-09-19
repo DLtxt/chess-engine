@@ -1,0 +1,8 @@
+shogi
+setup
++ k e1
++ K e9
++ n d5
+done
+game human human
+promote d5 c7

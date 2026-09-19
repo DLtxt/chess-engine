@@ -1,0 +1,9 @@
+chess
+setup
++ K e1
++ k e8
++ N c1
++ q a1
+done
+game human human
+move c1 d3
